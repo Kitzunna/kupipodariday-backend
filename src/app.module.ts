@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { WishesModule } from './wishes/wishes.module';
 import { WishlistsModule } from './wishlists/wishlists.module';
 import { OffersModule } from './offers/offers.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -25,8 +26,8 @@ import { OffersModule } from './offers/offers.module';
         username: config.get<string>('POSTGRES_USER', 'student'),
         password: config.get<string>('POSTGRES_PASSWORD', 'student'),
         database: config.get<string>('POSTGRES_DB', 'kupipodariday'),
-        autoLoadEntities: true,   // будет подхватывать сущности из модулей
-        synchronize: true,        // только для dev!
+        autoLoadEntities: true, // будет подхватывать сущности из модулей
+        synchronize: true, // только для dev!
       }),
     }),
 
@@ -37,6 +38,8 @@ import { OffersModule } from './offers/offers.module';
     WishlistsModule,
 
     OffersModule,
+
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
