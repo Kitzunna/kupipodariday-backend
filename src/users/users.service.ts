@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindManyOptions, FindOptionsWhere, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
+import { ILike } from 'typeorm';
 
 @Injectable()
 export class UsersService {
@@ -43,5 +44,14 @@ export class UsersService {
     if (!existing) throw new NotFoundException('User not found');
     await this.repo.remove(existing);
     return { deleted: true };
+  }
+
+  async search(query: string) {
+    return this.repo.find({
+      where: [
+        { username: ILike(`%${query}%`) },
+        { email: ILike(`%${query}%`) },
+      ],
+    });
   }
 }
