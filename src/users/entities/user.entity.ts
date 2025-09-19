@@ -1,6 +1,11 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column, OneToMany,
-  CreateDateColumn, UpdateDateColumn, Index,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { Wish } from '../../wishes/entities/wish.entity';
 import { Offer } from '../../offers/entities/offer.entity';
@@ -18,13 +23,15 @@ export class User {
   username: string; // 2..30 — проверим в DTO
 
   @Column({
-    type: 'varchar', length: 200,
+    type: 'varchar',
+    length: 200,
     default: 'Пока ничего не рассказал о себе',
   })
   about: string;
 
   @Column({
-    type: 'varchar', length: 1024,
+    type: 'varchar',
+    length: 1024,
     default: 'https://i.pravatar.cc/300',
   })
   avatar: string;

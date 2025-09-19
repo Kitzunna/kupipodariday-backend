@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, ManyToOne, Column, Unique } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  Column,
+  Unique,
+} from 'typeorm';
 import { Wishlist } from './wishlist.entity';
 import { Wish } from '../../wishes/entities/wish.entity';
 

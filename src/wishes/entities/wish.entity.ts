@@ -1,6 +1,12 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany,
-  CreateDateColumn, UpdateDateColumn, Index,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Offer } from '../../offers/entities/offer.entity';
@@ -23,10 +29,21 @@ export class Wish {
   @Column({ type: 'varchar', length: 1024 })
   image: string;
 
-  @Column({ type: 'numeric', precision: 10, scale: 2, transformer: decimalTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   price: number;
 
-  @Column({ type: 'numeric', precision: 10, scale: 2, default: 0, transformer: decimalTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+    transformer: decimalTransformer,
+  })
   raised: number;
 
   @ManyToOne(() => User, (user) => user.wishes, { onDelete: 'CASCADE' })
@@ -35,7 +52,8 @@ export class Wish {
   @Column({ type: 'varchar', length: 1024, nullable: true })
   description?: string;
 
-  @OneToMany(() => Offer, (offer) => offer.wish)
+  // <-- было (offer) => offer.wish, стало (offer) => offer.item
+  @OneToMany(() => Offer, (offer) => offer.item)
   offers: Offer[];
 
   @Column({ type: 'int', default: 0 })

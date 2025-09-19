@@ -5,20 +5,21 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Валидация DTO по всему приложению
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,            // выбрасываем поля, которых нет в DTO
-      forbidNonWhitelisted: true, // ругаемся, если прислали лишние поля
-      transform: true,            // авто-преобразование типов из строк (query/body)
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
 
-  // Разрешим запросы с фронтенда (другой порт/хост)
   app.enableCors();
 
-  const port = Number(process.env.PORT) || 3000;
+  const port = Number(process.env.PORT) || 3001;
   await app.listen(port);
-  console.log(`API is running on http://localhost:${port}`);
 }
-bootstrap();
+
+bootstrap().catch((err) => {
+  console.error('Bootstrap failed', err);
+  process.exit(1);
+});

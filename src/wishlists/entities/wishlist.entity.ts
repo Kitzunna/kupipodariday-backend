@@ -1,6 +1,11 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany,
-  CreateDateColumn, UpdateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { WishlistItem } from './wishlist-item.entity';
@@ -24,6 +29,9 @@ export class Wishlist {
   @ManyToOne(() => User, (user) => user.wishlists, { onDelete: 'CASCADE' })
   owner: User;
 
-  @OneToMany(() => WishlistItem, (i) => i.wishlist, { cascade: true, eager: true })
+  @OneToMany(() => WishlistItem, (i) => i.wishlist, {
+    cascade: true,
+    eager: true,
+  })
   items: WishlistItem[];
 }

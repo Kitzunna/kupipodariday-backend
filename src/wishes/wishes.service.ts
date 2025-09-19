@@ -1,41 +1,53 @@
 import {
   Injectable,
   BadRequestException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindManyOptions, FindOptionsWhere, Repository } from 'typeorm';
 import { Wish } from './entities/wish.entity';
 import { CreateWishDto } from './dto/create-wish.dto';
-import { DeepPartial } from 'typeorm';
+import { UpdateWishDto } from './dto/update-wish.dto';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class WishesService {
-  constructor(@InjectRepository(Wish) private repo: Repository<Wish>) {}
+  constructor(
+    @InjectRepository(Wish) private readonly repo: Repository<Wish>,
+  ) {}
 
-  async create(dto: CreateWishDto) {
-    const entity = this.repo.create(dto as DeepPartial<Wish>);
-    entity.raised ??= 0;
-    entity.copied ??= 0;
+  create(dto: CreateWishDto): Promise<Wish> {
+    const entity = this.repo.create({
+      ...dto,
+      raised: 0,
+      copied: 0,
+    });
     return this.repo.save(entity);
   }
 
-  async findMany(
+  findMany(
     where: FindOptionsWhere<Wish> = {},
     options: Omit<FindManyOptions<Wish>, 'where'> = {},
-  ) {
-    return this.repo.find({ where, ...options });
+  ): Promise<Wish[]> {
+    return this.repo.find({
+      where,
+      relations: { owner: true },
+      ...options,
+    });
   }
 
-  async findOne(where: FindOptionsWhere<Wish>) {
+  findOne(where: FindOptionsWhere<Wish>): Promise<Wish | null> {
     return this.repo.findOne({
       where,
       relations: { owner: true, offers: true },
     });
   }
 
-  // пример бизнес-правила: нельзя менять цену, если уже есть офферы
-  async updateOne(where: FindOptionsWhere<Wish>, dto: any) {
+  async updateOne(
+    where: FindOptionsWhere<Wish>,
+    dto: UpdateWishDto,
+  ): Promise<Wish> {
     const existing = await this.repo.findOne({
       where,
       relations: { offers: true },
@@ -48,11 +60,11 @@ export class WishesService {
       );
     }
 
-    const merged = this.repo.merge(existing, dto);
-    return this.repo.save(merged);
+    Object.assign(existing, dto);
+    return this.repo.save(existing);
   }
 
-  async removeOne(where: FindOptionsWhere<Wish>) {
+  async removeOne(where: FindOptionsWhere<Wish>): Promise<{ deleted: true }> {
     const existing = await this.repo.findOne({
       where,
       relations: { offers: true },
@@ -63,5 +75,66 @@ export class WishesService {
     }
     await this.repo.remove(existing);
     return { deleted: true };
+  }
+
+  createForOwner(ownerId: number, dto: CreateWishDto): Promise<Wish> {
+    const payload: Partial<Wish> = {
+      ...dto,
+      owner: { id: ownerId } as unknown as User,
+      raised: 0,
+      copied: 0,
+    };
+    return this.repo.save(this.repo.create(payload));
+  }
+
+  async updateOwned(
+    id: number,
+    ownerId: number,
+    dto: UpdateWishDto,
+  ): Promise<Wish> {
+    const wish = await this.repo.findOne({
+      where: { id },
+      relations: { owner: true, offers: true },
+    });
+    if (!wish) throw new NotFoundException('Wish not found');
+    if (wish.owner.id !== ownerId) {
+      throw new ForbiddenException('Редактирование чужого подарка запрещено');
+    }
+    return this.updateOne({ id }, dto);
+  }
+
+  async removeOwned(id: number, ownerId: number): Promise<{ deleted: true }> {
+    const wish = await this.repo.findOne({
+      where: { id },
+      relations: { owner: true, offers: true },
+    });
+    if (!wish) throw new NotFoundException('Wish not found');
+    if (wish.owner.id !== ownerId) {
+      throw new ForbiddenException('Удаление чужого подарка запрещено');
+    }
+    return this.removeOne({ id });
+  }
+
+  async copyForUser(srcId: number, userId: number): Promise<Wish> {
+    const src = await this.repo.findOne({ where: { id: srcId } });
+    if (!src) throw new NotFoundException('Wish not found');
+
+    const payload: import('typeorm').DeepPartial<Wish> = {
+      name: src.name,
+      link: src.link,
+      image: src.image,
+      price: src.price,
+      description: src.description ?? undefined,
+      owner: { id: userId } as unknown as User,
+      copiedFrom: { id: srcId } as unknown as Wish,
+      raised: 0,
+      copied: 0,
+    };
+
+    const newWish = this.repo.create(payload);
+    const saved = await this.repo.save(newWish);
+
+    await this.repo.increment({ id: srcId }, 'copied', 1);
+    return saved;
   }
 }

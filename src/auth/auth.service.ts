@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { HashService } from '../hash/hash.service';
@@ -12,7 +16,6 @@ export class AuthService {
     private jwt: JwtService,
   ) {}
 
-  // signup: хешируем пароль, создаём пользователя
   async signup(dto: CreateUserDto) {
     const exists = await this.users.findOne({ email: dto.email });
     if (exists) throw new ConflictException('Email already registered');
@@ -28,18 +31,20 @@ export class AuthService {
     return this.issueToken(user.id, user.username);
   }
 
-  // валидация для LocalStrategy
   async validateUser(username: string, password: string) {
     const user = await this.users.findOneWithPassword({ username });
     if (!user) throw new UnauthorizedException('Invalid credentials');
     const ok = await this.hash.compare(password, user.password);
     if (!ok) throw new UnauthorizedException('Invalid credentials');
-    return user; // вернём пользователя (без пароля в select по умолчанию)
+    return user;
   }
 
-  // signin: LocalStrategy положит user в req, мы выдаём jwt
   async signin(userId: number, username: string) {
-    return this.issueToken(userId, username);
+    const token = await this.jwt.signAsync(
+      { sub: userId, username },
+      { expiresIn: process.env.JWT_TTL ?? '7d' },
+    );
+    return { access_token: token };
   }
 
   private issueToken(sub: number, username: string) {
