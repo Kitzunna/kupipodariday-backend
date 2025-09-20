@@ -12,10 +12,8 @@ import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    // читаем .env, делаем конфиг глобальным
     ConfigModule.forRoot({ isGlobal: true }),
 
-    // подключение к Postgres через TypeORM
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -26,8 +24,8 @@ import { AuthModule } from './auth/auth.module';
         username: config.get<string>('POSTGRES_USER', 'student'),
         password: config.get<string>('POSTGRES_PASSWORD', 'student'),
         database: config.get<string>('POSTGRES_DB', 'kupipodariday'),
-        autoLoadEntities: true, // будет подхватывать сущности из модулей
-        synchronize: true, // только для dev!
+        autoLoadEntities: true,
+        synchronize: true,
       }),
     }),
 

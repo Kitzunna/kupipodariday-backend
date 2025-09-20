@@ -35,6 +35,7 @@ export class WishesController {
     return this.wishes.findMany({}, { order: { copied: 'DESC' }, take: 20 });
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.wishes.findOne({ id });

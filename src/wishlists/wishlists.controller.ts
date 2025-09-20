@@ -20,7 +20,6 @@ import { AddItemsDto } from './dto/add-items.dto';
 export class WishlistsController {
   constructor(private readonly wl: WishlistsService) {}
 
-  // получить одну подборку (публично)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.wl.findOne({ id });
@@ -32,17 +31,21 @@ export class WishlistsController {
     return this.wl.findMany({}, { order: { createdAt: 'DESC' } });
   }
 
-  // создать свою подборку
   @UseGuards(AuthGuard('jwt'))
   @Post()
-  create(
+  async create(
     @CurrentUser() user: { userId: number },
     @Body() dto: CreateWishlistDto,
   ) {
-    return this.wl.createForOwner(user.userId, dto);
+    const { itemsId, ...rest } = dto;
+    const wl = await this.wl.createForOwner(user.userId, rest);
+    if (itemsId?.length) {
+      await this.wl.addItemsOwned(wl.id, user.userId, itemsId);
+      return this.wl.findOne({ id: wl.id });
+    }
+    return wl;
   }
 
-  // обновить свою подборку
   @UseGuards(AuthGuard('jwt'))
   @Patch(':id')
   update(
@@ -53,7 +56,6 @@ export class WishlistsController {
     return this.wl.updateOwned(id, user.userId, dto);
   }
 
-  // удалить свою подборку
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
   remove(
@@ -63,7 +65,6 @@ export class WishlistsController {
     return this.wl.removeOwned(id, user.userId);
   }
 
-  // добавить несколько подарков в свою подборку
   @UseGuards(AuthGuard('jwt'))
   @Post(':id/items')
   addItems(
@@ -74,7 +75,6 @@ export class WishlistsController {
     return this.wl.addItemsOwned(id, user.userId, dto.items);
   }
 
-  // удалить один подарок из своей подборки
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id/items/:wishId')
   removeItem(

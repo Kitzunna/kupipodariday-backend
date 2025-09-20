@@ -8,27 +8,33 @@ import { UsersService } from '../users/users.service';
 import { HashService } from '../hash/hash.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 
+type PgError = Error & { code?: string; detail?: string };
+
 @Injectable()
 export class AuthService {
   constructor(
-    private users: UsersService,
-    private hash: HashService,
-    private jwt: JwtService,
+    private readonly users: UsersService,
+    private readonly hash: HashService,
+    private readonly jwt: JwtService,
   ) {}
 
   async signup(dto: CreateUserDto) {
-    const exists = await this.users.findOne({ email: dto.email });
-    if (exists) throw new ConflictException('Email already registered');
-
     const password = await this.hash.hash(dto.password);
-    const user = await this.users.create({
-      ...dto,
-      password,
-      about: dto.about ?? 'Пока ничего не рассказал о себе',
-      avatar: dto.avatar ?? 'https://i.pravatar.cc/300',
-    });
-
-    return this.issueToken(user.id, user.username);
+    try {
+      const user = await this.users.create({
+        ...dto,
+        password,
+        about: dto.about ?? 'Пока ничего не рассказал о себе',
+        avatar: dto.avatar ?? 'https://i.pravatar.cc/300',
+      });
+      return user;
+    } catch (e) {
+      const err = e as PgError;
+      if (err.code === '23505') {
+        throw new ConflictException('Email or username already exists');
+      }
+      throw e;
+    }
   }
 
   async validateUser(username: string, password: string) {
@@ -45,10 +51,5 @@ export class AuthService {
       { expiresIn: process.env.JWT_TTL ?? '7d' },
     );
     return { access_token: token };
-  }
-
-  private issueToken(sub: number, username: string) {
-    const payload = { sub, username };
-    return { access_token: this.jwt.sign(payload) };
   }
 }

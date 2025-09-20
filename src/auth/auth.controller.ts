@@ -3,17 +3,30 @@ import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request as ExpressRequest } from 'express';
+import type { User } from '../users/entities/user.entity';
 
 type LocalUser = { id: number; username: string };
 type ReqWithUser = ExpressRequest & { user: LocalUser };
 
+function toSafeUser(u: User) {
+  return {
+    id: u.id,
+    createdAt: u.createdAt,
+    updatedAt: u.updatedAt,
+    username: u.username,
+    about: u.about,
+    avatar: u.avatar,
+  };
+}
+
 @Controller()
 export class AuthController {
-  constructor(private auth: AuthService) {}
+  constructor(private readonly auth: AuthService) {}
 
   @Post('signup')
-  signup(@Body() dto: CreateUserDto) {
-    return this.auth.signup(dto);
+  async signup(@Body() dto: CreateUserDto) {
+    const user = await this.auth.signup(dto);
+    return toSafeUser(user);
   }
 
   @UseGuards(AuthGuard('local'))
